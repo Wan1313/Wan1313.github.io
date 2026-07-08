@@ -1,102 +1,101 @@
-# Add
-
-**合格名称：** `manim.animation.animation.Add`
+TypeWithCursor
+合格名称： manim.animation.creation.TypeWithCursor
 
 ::: currentmodule
-manim.animation.animation
+manim.animation.creation
 :::
 
 ::::: {.autoclass show-inheritance="" members="" private-members=""}
-Add
+TypeWithCursor
 
-## 描述
+描述
+TypeWithCursor 是一个用于模拟逐字打字效果的动画类，常用于演示文本的实时输入过程。该动画会按照字符顺序依次显示 Text 或 MarkupText 对象中的每个字符，并在当前输入位置显示一个闪烁的光标（通常为竖线或下划线），以增强视觉真实感。
 
-`Add` 是一个基础的动画类，用于在场景中**立即**添加一个或多个 Mobject（图形对象）。与 `FadeIn`、`Write` 等带有过渡效果的动画不同，`Add` 不进行任何插值或视觉渐变 – 对象会直接在动画开始时出现在场景中，其最终状态即为初始状态。
+此动画适用于：
 
-该动画常用于：
-- 静态元素的瞬时出现，无需入场效果；
-- 构建复杂场景时的临时展示；
-- 作为其他动画的辅助或基础组件。
+代码演示中的命令输入；
 
----
+演讲或教学中的逐句展示；
 
-## 参数
+需要强调文本逐步生成的场景。
 
-| 参数 | 类型 | 说明 |
-| :--- | :--- | :--- |
-| `mobject` | `Mobject` | 要添加到场景中的图形对象。这是必填参数。 |
-| `run_time` | `float` | 动画的持续时间（秒）。默认为 `0`，即对象立即出现；若设为正数，则动画会持续该时长，但对象始终可见（无变化），相当于在开始瞬间添加后保持显示。 |
-| `rate_func` | `Callable[[float], float]` | 速率函数，定义动画进度曲线。由于 `Add` 无插值过程，此参数不会影响视觉结果，但会保留在父类中。 |
-| `lag_ratio` | `float` | 当 `mobject` 为 `VGroup` 时，子对象出现的时间延迟比例。例如设为 `0.5`，则子对象会在动画前半部分依次出现，但由于无过渡，实际效果仅为时间点的错开。 |
-| `remover` | `bool` | 若为 `True`，动画结束后会从场景中移除该对象（默认为 `False`）。 |
-| `suspend_mobject_updating` | `bool` | 是否在动画期间暂停 `mobject` 的更新程序（默认为 `True`）。 |
-| `name` | `str` | 动画的名称，用于调试和日志显示。默认为 `"Add"`。 |
+与 Write 动画类似，TypeWithCursor 作用于文本对象，但它额外提供了光标动画和更细致的字符级控制。
 
-> **注意：** 其他继承自 `Animation` 的关键字参数（如 `use_override`）亦被接受。
+参数
+参数	类型	说明
+mobject	Text 或 MarkupText	要进行打字效果的文本对象。必须为文本类型，否则会引发错误。
+run_time	float	动画的总持续时间（秒）。默认为 2.0。
+rate_func	Callable[[float], float]	速率函数，控制字符出现的节奏。默认使用线性函数。
+lag_ratio	float	字符之间的延迟比例（相对于 run_time）。默认 0.05，即每个字符的显示时间约为总时长的 5%。
+cursor_char	str	光标符号，默认为 "|"（竖线）。可改为 "_" 等。
+cursor_blink_interval	float	光标闪烁间隔（秒），默认为 0.5。若设为 0 则禁用闪烁。
+cursor_blink	bool	是否启用光标闪烁，默认为 True。
+time_per_char	float	每个字符的显示时间（秒），若指定则覆盖 run_time 和 lag_ratio。
+remover	bool	动画结束后是否移除 mobject，默认为 False。
+suspend_mobject_updating	bool	是否暂停 mobject 的更新程序，默认为 True。
+name	str	动画名称，默认为 "TypeWithCursor"。
+注意： 继承自 Animation 的其他参数（如 use_override）也接受。
 
----
-
-## 方法
-
+方法
 ::: {.autosummary nosignatures=""}
-~Add.begin
-~Add.clean_up_from_scene
-~Add.finish
-~Add.interpolate
-~Add.update_mobjects
+~TypeWithCursor.begin
+~TypeWithCursor.clean_up_from_scene
+~TypeWithCursor.finish
+~TypeWithCursor.update_submobject_list
 :::
 
-### 方法详情
+方法详情
+begin()
+开始动画。
+在该方法中，会初始化字符列表、创建光标对象，并将 mobject 的子对象（字符）全部隐藏，准备逐个显示。
+返回类型： None
 
-- **`begin()`**  
-  开始动画。  
-  此方法在动画播放时被调用，核心操作为将 `self.mobject` 添加至场景（调用 `scene.add`）。  
-  *返回类型：* `None`
+clean_up_from_scene(scene)
+动画完成后清理场景。
+如果动画标记为 remover，则会移除 mobject；否则，光标会被移除，仅保留完整文本。
+参数： scene – 当前场景对象。
+返回类型： None
 
-- **`clean_up_from_scene(scene)`**  
-  动画完成后清理场景。  
-  如果动画被标记为 `remover`，则在此处移除 `mobject`。  
-  *参数：* `scene` – 当前场景对象。  
-  *返回类型：* `None`
+finish()
+完成动画，确保所有字符均已显示，并移除光标。
+返回类型： None
 
-- **`finish()`**  
-  完成动画，通常在结束时调用。  
-  *返回类型：* `None`
+update_submobject_list()
+更新子对象列表。
+在动画开始前，调用此方法将文本拆分为单个字符（每个字符作为一个独立的 Mobject），用于后续逐次显示。
+返回类型： None
 
-- **`interpolate(alpha)`**  
-  设置动画进度。由于 `Add` 无需插值，此方法为空实现（或只调用基类方法）。  
-  *参数：* `alpha` – 0 到 1 的浮点数，表示完成比例。  
-  *返回类型：* `None`
-
-- **`update_mobjects(dt)`**  
-  更新内部 mobject 状态（例如起始 mobject）。对 `Add` 而言，此方法无额外作用。  
-  *参数：* `dt` – 时间增量。  
-  *返回类型：* `None`
-
----
-
-## 属性
-
+属性
 ::: autosummary
-~Add.run_time
+~TypeWithCursor.run_time
 :::
 
-- **`run_time`**：动画的持续时间（秒）。可通过 `set_run_time()` 修改。
+run_time：动画的总时长（秒）。可通过 set_run_time() 修改。
 
----
-
-## 示例
-
-```python
+示例
+python
 from manim import *
 
-class AddExample(Scene):
+class TypeWriterExample(Scene):
     def construct(self):
-        dot = Dot(color=RED)
-        square = Square(color=BLUE)
+        text = Text("Hello, Manim!", font_size=48)
+        self.play(TypeWithCursor(text, run_time=3, cursor_blink_interval=0.3))
+        self.wait(1)
+此示例将逐字显示 “Hello, Manim!”，并在输入位置显示一个闪烁的竖线光标。
 
-        # 立即添加红色圆点
-        self.play(Add(dot))
+与其他动画的对比
+动画类	作用	特殊效果
+TypeWithCursor	逐字显示文本 + 光标	光标闪烁，模拟打字
+Write	逐笔画绘制（适用于向量图形）	根据路径绘制
+AddTextLetterByLetter	逐字添加文本（无光标）	仅显示文字
+Create	逐点绘制（通用）	按形状轮廓绘制
+备注
+仅支持 Text 或 MarkupText 对象；若传入其他类型，会抛出异常。
 
-        # 延迟 1 秒后添加蓝色正方形（但无过渡）
-        self.play(Add(square, run_time=1))
+光标位置始终位于当前已输入文本的末尾。
+
+若需要自定义光标样式，可通过 cursor_char 参数设置为任意符号或图形。
+
+当 cursor_blink_interval 为 0 时，光标将保持常亮（不闪烁）。
+
+该动画会修改 mobject 的原始状态（字符逐个变为可见），因此若需重复使用，建议先复制。
