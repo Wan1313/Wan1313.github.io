@@ -1,24 +1,24 @@
-# TypeWithCursor
+# Blink
 
-**合格名称：** `manim.animation.creation.TypeWithCursor`
+**合格名称：** `manim.animation.indication.Blink`
 
 ::: currentmodule
-manim.animation.creation
+manim.animation.indication
 :::
 
 ::::: {.autoclass show-inheritance="" members="" private-members=""}
-TypeWithCursor
+Blink
 
 ## 描述
 
-`TypeWithCursor` 是一个用于模拟**逐字打字效果**的动画类，常用于演示文本的实时输入过程。该动画会按照字符顺序依次显示 `Text` 或 `MarkupText` 对象中的每个字符，并在当前输入位置显示一个闪烁的光标（通常为竖线或下划线），以增强视觉真实感。
+`Blink` 是一个用于**强调**的动画类，使目标 `Mobject` 产生一次或多次“闪烁”效果 – 通常表现为快速缩放（放大再恢复）并伴随透明度或颜色的短暂变化，以吸引观众注意力。
 
-此动画适用于：
-- 代码演示中的命令输入；
-- 演讲或教学中的逐句展示；
-- 需要强调文本逐步生成的场景。
+该动画常用于：
+- 高亮显示场景中的关键元素；
+- 模拟按钮点击或状态变化；
+- 在演示中引导观众视线。
 
-与 `Write` 动画类似，`TypeWithCursor` 作用于文本对象，但它额外提供了光标动画和更细致的字符级控制。
+`Blink` 是 `Indication` 动画家族的一员，与 `Flash`、`Wiggle` 等类似，但更专注于快速、明显的视觉跳动。
 
 ---
 
@@ -26,51 +26,44 @@ TypeWithCursor
 
 | 参数 | 类型 | 说明 |
 | :--- | :--- | :--- |
-| `mobject` | `Text` 或 `MarkupText` | 要进行打字效果的文本对象。必须为文本类型，否则会引发错误。 |
-| `run_time` | `float` | 动画的总持续时间（秒）。默认为 `2.0`。 |
-| `rate_func` | `Callable[[float], float]` | 速率函数，控制字符出现的节奏。默认使用线性函数。 |
-| `lag_ratio` | `float` | 字符之间的延迟比例（相对于 `run_time`）。默认 `0.05`，即每个字符的显示时间约为总时长的 5%。 |
-| `cursor_char` | `str` | 光标符号，默认为 `"\|"`（竖线）。可改为 `"_"` 等。 |
-| `cursor_blink_interval` | `float` | 光标闪烁间隔（秒），默认为 `0.5`。若设为 `0` 则禁用闪烁。 |
-| `cursor_blink` | `bool` | 是否启用光标闪烁，默认为 `True`。 |
-| `time_per_char` | `float` | 每个字符的显示时间（秒），若指定则覆盖 `run_time` 和 `lag_ratio`。 |
+| `mobject` | `Mobject` | 要执行闪烁动画的对象。 |
+| `run_time` | `float` | 动画的总持续时间（秒）。默认为 `0.5`。 |
+| `rate_func` | `Callable[[float], float]` | 速率函数，控制闪烁的节奏。默认使用 `rate_functions.ease_in_out_sine`。 |
+| `blink_ratio` | `float` | 闪烁过程中“放大”阶段占 `run_time` 的比例（剩余时间为恢复阶段）。默认为 `0.5`。 |
+| `n_blinks` | `int` | 闪烁次数。默认为 `1`。若大于 `1`，动画会重复进行多次放大-恢复循环。 |
+| `scale_factor` | `float` | 放大倍率。对象在峰值时会放大到原始大小的 `scale_factor` 倍。默认为 `1.2`。 |
+| `color_shift` | `str` 或 `Color` | 闪烁时颜色的变化目标色。若为 `None` 则不改变颜色。默认为 `None`。 |
 | `remover` | `bool` | 动画结束后是否移除 `mobject`，默认为 `False`。 |
 | `suspend_mobject_updating` | `bool` | 是否暂停 `mobject` 的更新程序，默认为 `True`。 |
-| `name` | `str` | 动画名称，默认为 `"TypeWithCursor"`。 |
+| `name` | `str` | 动画名称，默认为 `"Blink"`。 |
 
-> **注意：** 继承自 `Animation` 的其他参数（如 `use_override`）也接受。
+> **注意：** 其他继承自 `Animation` 的参数（如 `lag_ratio`）也接受，但可能不影响 `Blink` 的行为。
 
 ---
 
 ## 方法
 
 ::: {.autosummary nosignatures=""}
-~TypeWithCursor.begin
-~TypeWithCursor.clean_up_from_scene
-~TypeWithCursor.finish
-~TypeWithCursor.update_submobject_list
+~Blink.begin
+~Blink.interpolate
+~Blink.finish
 :::
 
 ### 方法详情
 
 - **`begin()`**  
   开始动画。  
-  在该方法中，会初始化字符列表、创建光标对象，并将 `mobject` 的子对象（字符）全部隐藏，准备逐个显示。  
+  初始化内部状态，记录对象的原始属性（缩放和颜色）。  
   *返回类型：* `None`
 
-- **`clean_up_from_scene(scene)`**  
-  动画完成后清理场景。  
-  如果动画标记为 `remover`，则会移除 `mobject`；否则，光标会被移除，仅保留完整文本。  
-  *参数：* `scene` – 当前场景对象。  
+- **`interpolate(alpha)`**  
+  根据进度 `alpha` 更新对象的状态。  
+  将总体进度拆分为多个闪烁周期，并应用缩放和颜色变化。  
+  *参数：* `alpha` – 0 到 1 的浮点数。  
   *返回类型：* `None`
 
 - **`finish()`**  
-  完成动画，确保所有字符均已显示，并移除光标。  
-  *返回类型：* `None`
-
-- **`update_submobject_list()`**  
-  更新子对象列表。  
-  在动画开始前，调用此方法将文本拆分为单个字符（每个字符作为一个独立的 `Mobject`），用于后续逐次显示。  
+  完成动画，确保对象恢复到原始大小和颜色（如果 `color_shift` 已应用，则恢复）。  
   *返回类型：* `None`
 
 ---
@@ -78,7 +71,7 @@ TypeWithCursor
 ## 属性
 
 ::: autosummary
-~TypeWithCursor.run_time
+~Blink.run_time
 :::
 
 - **`run_time`**：动画的总时长（秒）。可通过 `set_run_time()` 修改。
@@ -90,8 +83,9 @@ TypeWithCursor
 ```python
 from manim import *
 
-class TypeWriterExample(Scene):
+class BlinkExample(Scene):
     def construct(self):
-        text = Text("Hello, Manim!", font_size=48)
-        self.play(TypeWithCursor(text, run_time=3, cursor_blink_interval=0.3))
+        circle = Circle(color=BLUE, fill_opacity=0.5)
+        self.play(Create(circle))
+        self.play(Blink(circle, n_blinks=3, scale_factor=1.5, run_time=2))
         self.wait(1)
